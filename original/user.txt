@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>租客端 | 校园物品共享租赁系统</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #050a18 0%, #0c1730 50%, #081022 100%);
+            background-attachment: fixed;
+            color: #f0f5ff;
+            overflow-x: hidden;
+            position: relative;
+            padding: 25px 15px;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 15% 20%, rgba(0, 210, 255, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 85% 75%, rgba(140, 80, 255, 0.1) 0%, transparent 45%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(16, 24, 45, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 200, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            margin-bottom: 30px;
+            transition: 0.3s ease;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00d0ff, #9c6bff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: #b4c8e8;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .connect-wallet {
+            padding: 14px 30px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #0088cc, #00c8ff);
+            color: #001429;
+            box-shadow: 0 4px 15px rgba(0, 200, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .connect-wallet:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 22px rgba(0, 200, 255, 0.45);
+        }
+
+        .wallet-address {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #00d0ff;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .grid-wrap {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .tech-card {
+            background: rgba(16, 24, 45, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 200, 255, 0.2);
+            border-radius: 18px;
+            padding: 26px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            transition: 0.3s ease;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .tech-card h2 {
+            font-size: 18px;
+            color: #00d0ff;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+            border-bottom: 1px dashed rgba(0, 210, 255, 0.25);
+        }
+
+        .form-item {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            color: #b4c8e8;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(0, 200, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #f0f5ff;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #00d0ff;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+        }
+
+        .tip-text {
+            font-size: 13px;
+            color: #94a8d0;
+            margin-top: 6px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:disabled {
+            background: #2a3447 !important;
+            color: #60749c !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0077aa, #00c8ff);
+            color: #001429;
+            box-shadow: 0 4px 12px rgba(0, 200, 255, 0.25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 200, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #008866, #00ff9d);
+            color: #002218;
+            box-shadow: 0 4px 12px rgba(0, 255, 157, 0.25);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 255, 157, 0.4);
+        }
+
+        .full-card {
+            grid-column: 1 / -1;
+        }
+
+        .info-box {
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 10px;
+            color: #b4c8e8;
+            white-space: pre-wrap;
+            line-height: 1.7;
+            font-size: 14px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .log-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 10px;
+            padding: 14px;
+            height: 180px;
+            overflow-y: auto;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #a0b4d8;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .grid-wrap {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 26px;
+            }
+            .header {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 租客端 - 物品租赁系统</h1>
+            <p>电脑MetaMask插件 / 手机跳转MetaMask APP</p>
+            <div class="wallet-bar">
+                <button class="connect-wallet" id="connectWallet">连接钱包</button>
+                <span class="wallet-address" id="walletAddr">未连接钱包</span>
+            </div>
+        </div>
+        <div class="grid-wrap">
+            <div class="tech-card">
+                <h2>📖 物品租赁</h2>
+                <div class="form-item">
+                    <label>商品 ID</label>
+                    <input type="number" id="rentGoodId" value="0">
+                </div>
+                <button class="btn btn-primary" id="rentGood">立即租赁</button>
+                <div class="tip-text">租赁自动扣除押金</div>
+            </div>
+            <div class="tech-card">
+                <h2>📤 物品归还</h2>
+                <div class="form-item">
+                    <label>商品 ID</label>
+                    <input type="number" id="returnGoodId" value="0">
+                </div>
+                <button class="btn btn-success" id="returnGood">确认归还</button>
+                <div class="tip-text">结算租金并退还押金</div>
+            </div>
+            <div class="tech-card">
+                <h2>⭐ 体验评价</h2>
+                <div class="form-item">
+                    <label>商品 ID</label>
+                    <input type="number" id="reviewGoodId" value="0">
+                </div>
+                <div class="form-item">
+                    <label>综合评分 (1-5星)</label>
+                    <input type="number" id="score" value="5" min="1" max="5">
+                </div>
+                <button class="btn btn-primary" id="reviewGood">提交评价</button>
+                <div class="tip-text">仅租用并归还后可评价</div>
+            </div>
+            <div class="tech-card full-card">
+                <h2>🔍 链上信息查询</h2>
+                <div class="form-item">
+                    <label>商品 ID</label>
+                    <input type="number" id="queryGoodId" value="0">
+                    <button class="btn btn-primary" id="queryGood" style="margin-top:10px">查询数据</button>
+                </div>
+                <div class="info-box" id="goodDetail">暂无链上数据</div>
+            </div>
+            <div class="tech-card full-card">
+                <h2>📜 全局操作日志</h2>
+                <div class="log-box" id="logBox">等待连接钱包...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 已替换为你的合约地址
+        const CONTRACT_ADDR = "0xd38eBdD2B09a66d7Ad84fF7596BbC5D7F693b9d0";
+        const ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_pledge",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_dayRent",
+        "type": "uint256"
+      }
+    ],
+    "name": "addGood",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "rentGood",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "returnGood",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "score",
+        "type": "uint8"
+      }
+    ],
+    "name": "reviewGood",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isBlack",
+        "type": "bool"
+      }
+    ],
+    "name": "setBlack",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_enable",
+        "type": "bool"
+      }
+    ],
+    "name": "setGoodsEnable",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "blackList",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getGoodInfo",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pledge",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dayRent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "enabled",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRented",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "currentRenter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getReviews",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "user": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "score": "score",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct GoodsRent.Review[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "goodReviews",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "score",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "goods",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pledge",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dayRent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "enabled",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRented",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "currentRenter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "rentRecords",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "renter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "finished",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "recordId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRentRecord",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "goodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "renter",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "finished",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRentRecordCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
+        let provider, signer, contract;
+        let currentAddress = "";
+        let logTimer = null;
+        const LOG_INTERVAL = 2000;
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        function isInMetaMaskBrowser() {
+            return !!window.ethereum && window.ethereum.isMetaMask;
+        }
+        function appendLog(text) {
+            const logBox = document.getElementById("logBox");
+            const time = new Date().toLocaleTimeString();
+            logBox.innerHTML += `[${time}] ${text}\n`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+        function clearLog() {
+            document.getElementById("logBox").innerHTML = "";
+        }
+        function disableAllBtn(flag) {
+            document.querySelectorAll(".btn").forEach(btn => btn.disabled = flag);
+            document.querySelector(".connect-wallet").disabled = flag;
+        }
+        function startAutoRefreshLog() {
+            if (logTimer) clearInterval(logTimer);
+            logTimer = setInterval(() => {}, LOG_INTERVAL);
+        }
+        function stopAutoRefreshLog() {
+            if (logTimer) clearInterval(logTimer);
+        }
+
+        document.getElementById("connectWallet").addEventListener("click", async () => {
+            disableAllBtn(true);
+            if (window.ethereum && window.ethereum.isMetaMask) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    currentAddress = await signer.getAddress();
+                    contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+                    document.getElementById("walletAddr").innerText = currentAddress;
+                    clearLog();
+                    appendLog("✅ 钱包连接成功，地址：" + currentAddress);
+                    startAutoRefreshLog();
+                } catch (err) {
+                    appendLog("❌ 连接失败：" + err.message);
+                } finally {
+                    disableAllBtn(false);
+                }
+                return;
+            }
+            if (isMobile()) {
+                const currentUrl = window.location.href;
+                const deepLink = `metamask://dapp/${currentUrl}`;
+                window.location.href = deepLink;
+                appendLog("🔗 正在跳转 MetaMask APP...");
+                setTimeout(() => {
+                    alert("若未跳转，请手动打开 MetaMask，进入【浏览器】访问当前页面");
+                }, 1500);
+                disableAllBtn(false);
+                return;
+            }
+            alert("未检测到 MetaMask，请先安装 MetaMask 浏览器插件！");
+            disableAllBtn(false);
+        });
+
+        document.getElementById("rentGood").addEventListener("click", async () => {
+            if (!contract) return alert("请先连接钱包");
+            const id = document.getElementById("rentGoodId").value;
+            try {
+                disableAllBtn(true);
+                appendLog(`👤 租客【${currentAddress}】租赁商品 ${id}`);
+                const goodInfo = await contract.getGoodInfo(id);
+                const tx = await contract.rentGood(id, { value: goodInfo.pledge });
+                await tx.wait();
+                appendLog(`✅ 商品 ${id} 租赁完成`);
+            } catch (err) {
+                appendLog("❌ 租赁失败：" + err.message);
+            } finally {
+                disableAllBtn(false);
+            }
+        });
+
+        document.getElementById("returnGood").addEventListener("click", async () => {
+            if (!contract) return alert("请先连接钱包");
+            const id = document.getElementById("returnGoodId").value;
+            try {
+                disableAllBtn(true);
+                appendLog(`👤 租客【${currentAddress}】归还商品 ${id}`);
+                const tx = await contract.returnGood(id);
+                await tx.wait();
+                appendLog(`✅ 商品 ${id} 归还完成`);
+            } catch (err) {
+                appendLog("❌ 归还失败：" + err.message);
+            } finally {
+                disableAllBtn(false);
+            }
+        });
+
+        async function checkCanReview(goodId) {
+            const recordCount = await contract.getRentRecordCount();
+            for (let i = 0; i < recordCount; i++) {
+                const record = await contract.getRentRecord(i);
+                if (record.goodId.toString() === goodId 
+                    && record.renter.toLowerCase() === currentAddress.toLowerCase() 
+                    && record.finished) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        document.getElementById("reviewGood").addEventListener("click", async () => {
+            if (!contract) return alert("请先连接钱包");
+            const id = document.getElementById("reviewGoodId").value;
+            const score = document.getElementById("score").value;
+            if (score < 1 || score > 5) return alert("评分范围 1-5 星");
+
+            try {
+                disableAllBtn(true);
+                appendLog(`🔍 校验评价权限，商品ID：${id}`);
+                const canReview = await checkCanReview(id);
+                if (!canReview) {
+                    appendLog("❌ 权限不足：您未租用该商品 或 尚未完成归还，无法评价");
+                    alert("您必须租用并归还该商品后，才能进行评价！");
+                    return;
+                }
+                appendLog(`👤 租客【${currentAddress}】为商品 ${id} 提交${score}星评价`);
+                const tx = await contract.reviewGood(id, score);
+                await tx.wait();
+                appendLog("✅ 评价提交成功");
+            } catch (err) {
+                appendLog("❌ 评价失败：" + err.message);
+            } finally {
+                disableAllBtn(false);
+            }
+        });
+
+        document.getElementById("queryGood").addEventListener("click", async () => {
+            if (!contract) return alert("请先连接钱包");
+            const id = document.getElementById("queryGoodId").value;
+            try {
+                const info = await contract.getGoodInfo(id);
+                const text = `商品名称：${info.name}\n押金(wei)：${info.pledge}\n日租金(wei)：${info.dayRent}\n是否上架：${info.enabled ? "是" : "否"}\n是否租赁：${info.isRented ? "是" : "否"}\n当前租客：${info.currentRenter}\n发布地址：${info.owner}`;
+                document.getElementById("goodDetail").innerText = text;
+                appendLog(`🔍 查询商品 ${id} 成功`);
+            } catch (err) {
+                document.getElementById("goodDetail").innerText = "查询失败：" + err.message;
+                appendLog("❌ 查询失败：" + err.message);
+            }
+        });
+
+        window.addEventListener("beforeunload", stopAutoRefreshLog);
+    </script>
+</body>
+</html>

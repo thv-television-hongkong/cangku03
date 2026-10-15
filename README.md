@@ -1,4 +1,4 @@
-# 仓库03 校园物品共享租赁系统
+# 仓库03 闲置物品共享租赁系统
 
 基于 Solidity、HTML/CSS/JavaScript、ethers.js 5.7.2 和 MetaMask 的链上校园物品租赁 DApp。包含租客、出租者和管理员三类页面，以及完整的合约源码和原项目文档。
 
